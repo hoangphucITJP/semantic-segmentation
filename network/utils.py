@@ -34,7 +34,7 @@ import torch
 from torch import nn
 
 from .mynn import Norm2d, Upsample
-from .xception import xception71
+from .xception import xception71, custom_xception71
 from .wider_resnet import wrn38
 from .SEresnext import se_resnext50_32x4d, se_resnext101_32x4d
 from .Resnet import resnet50, resnet101
@@ -133,6 +133,12 @@ def get_trunk(trunk_name, output_stride=8, input_channels=3):
         high_level_ch = backbone.high_level_ch
         s2_ch = -1
         s4_ch = -1
+    elif trunk_name == 'customxception71':
+        backbone = custom_xception71(output_stride=output_stride, BatchNorm=Norm2d,
+                              pretrained=True, input_channels=input_channels)
+        s2_ch = 64
+        s4_ch = 128
+        high_level_ch = 2048
     else:
         raise 'unknown backbone {}'.format(trunk_name)
 
