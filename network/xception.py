@@ -330,20 +330,6 @@ class custom_xception71(nn.Module):
                              BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
         self.block12 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
                              BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block13 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block14 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block15 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block16 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block17 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block18 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
-        self.block19 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation,
-                             BatchNorm=BatchNorm, start_with_relu=True, grow_first=True)
 
         # Exit flow
         self.block20 = Block(728, 1024, reps=2, stride=exit_stride, dilation=exit_block_dilations[0],
@@ -397,13 +383,6 @@ class custom_xception71(nn.Module):
         x = self.block10(x)
         x = self.block11(x)
         x = self.block12(x)
-        x = self.block13(x)
-        x = self.block14(x)
-        x = self.block15(x)
-        x = self.block16(x)
-        x = self.block17(x)
-        x = self.block18(x)
-        x = self.block19(x)
 
         # Exit flow
         x = self.block20(x)

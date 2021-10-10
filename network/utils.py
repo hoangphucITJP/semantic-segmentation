@@ -37,7 +37,7 @@ from .mynn import Norm2d, Upsample
 from .xception import xception71, custom_xception71
 from .wider_resnet import wrn38
 from .SEresnext import se_resnext50_32x4d, se_resnext101_32x4d
-from .Resnet import resnet50, resnet101
+from .Resnet import resnet50, resnet101, resnet18, resnet34
 from . import hrnetv2
 
 from runx.logx import logx
@@ -45,15 +45,27 @@ from ..config import cfg
 
 
 class get_resnet(nn.Module):
-    def __init__(self, trunk_name, output_stride=8):
+    def __init__(self, trunk_name, output_stride=8, input_channels=3):
         super(get_resnet, self).__init__()
 
         if trunk_name == 'seresnext-50':
             resnet = se_resnext50_32x4d()
         elif trunk_name == 'seresnext-101':
             resnet = se_resnext101_32x4d()
+        elif trunk_name == 'resnet-18':
+            resnet = resnet18(input_channels=input_channels)
+            resnet.layer0 = nn.Sequential(resnet.conv1, resnet.bn1,
+                                          resnet.relu, resnet.maxpool)
+        elif trunk_name == 'resnet-34':
+            resnet = resnet34(input_channels=input_channels)
+            resnet.layer0 = nn.Sequential(resnet.conv1, resnet.bn1,
+                                          resnet.relu, resnet.maxpool)
         elif trunk_name == 'resnet-50':
-            resnet = resnet50()
+            resnet = resnet50(input_channels=input_channels)
+            resnet.layer0 = nn.Sequential(resnet.conv1, resnet.bn1,
+                                          resnet.relu, resnet.maxpool)
+        elif trunk_name == 'shallow-resnet-50':
+            resnet = resnet50(input_channels=input_channels, shallow=True)
             resnet.layer0 = nn.Sequential(resnet.conv1, resnet.bn1,
                                           resnet.relu, resnet.maxpool)
         elif trunk_name == 'resnet-101':
@@ -123,11 +135,16 @@ def get_trunk(trunk_name, output_stride=8, input_channels=3):
         s2_ch = 48
         s4_ch = -1
         high_level_ch = 2048
-    elif trunk_name == 'resnet-50' or trunk_name == 'resnet-101':
+    elif trunk_name in ['resnet-18', 'resnet-34', 'resnet-50', 'resnet-101']:
         backbone = get_resnet(trunk_name, output_stride=output_stride, input_channels=input_channels)
         s2_ch = 256
         s4_ch = -1
         high_level_ch = 2048
+    elif trunk_name == 'shallow-resnet-50':
+        backbone = get_resnet(trunk_name, output_stride=output_stride, input_channels=input_channels)
+        s2_ch = 128
+        s4_ch = -1
+        high_level_ch = 1024
     elif trunk_name == 'hrnetv2':
         backbone = hrnetv2.get_seg_model(input_channels=input_channels)
         high_level_ch = backbone.high_level_ch
