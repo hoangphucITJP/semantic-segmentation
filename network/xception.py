@@ -6,9 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from config import cfg
-from network.mynn import Norm2d
-from apex.parallel import SyncBatchNorm
+from ..config import cfg
+from .mynn import Norm2d
 from runx.logx import logx
 
 
@@ -260,9 +259,6 @@ class xception71(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, SyncBatchNorm):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()

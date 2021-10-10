@@ -30,19 +30,18 @@ POSSIBILITY OF SUCH DAMAGE.
 from collections import OrderedDict
 
 import torch
-import torch.nn.functional as F
 
 from torch import nn
 
-from network.mynn import Norm2d, Upsample
-from network.xception import xception71
-from network.wider_resnet import wrn38
-from network.SEresnext import se_resnext50_32x4d, se_resnext101_32x4d
-from network.Resnet import resnet50, resnet101
-import network.hrnetv2 as hrnetv2
+from .mynn import Norm2d, Upsample
+from .xception import xception71
+from .wider_resnet import wrn38
+from .SEresnext import se_resnext50_32x4d, se_resnext101_32x4d
+from .Resnet import resnet50, resnet101
+from . import hrnetv2
 
 from runx.logx import logx
-from config import cfg
+from ..config import cfg
 
 
 class get_resnet(nn.Module):
@@ -99,7 +98,7 @@ class get_resnet(nn.Module):
         return s2_features, s4_features, x
 
 
-def get_trunk(trunk_name, output_stride=8):
+def get_trunk(trunk_name, output_stride=8, pretrained=None):
     """
     Retrieve the network trunk and channel counts.
     """
@@ -109,7 +108,7 @@ def get_trunk(trunk_name, output_stride=8):
         #
         # FIXME: pass in output_stride once we support stride 16
         #
-        backbone = wrn38(pretrained=True)
+        backbone = wrn38(pretrained=pretrained)
         s2_ch = 128
         s4_ch = 256
         high_level_ch = 4096

@@ -40,7 +40,7 @@ import os
 import re
 import torch
 
-from utils.attr_dict import AttrDict
+from .utils.attr_dict import AttrDict
 from runx.logx import logx
 
 

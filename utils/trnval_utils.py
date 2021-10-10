@@ -30,10 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 import os
 import torch
 
-from config import cfg
-from utils.misc import fast_hist, fmt_scale
-from utils.misc import AverageMeter, eval_metrics
-from utils.misc import metrics_per_image
+from ..config import cfg
+from .misc import fast_hist, fmt_scale
+from .misc import AverageMeter, eval_metrics
+from .misc import metrics_per_image
 
 from runx.logx import logx
 
@@ -323,7 +323,7 @@ def validate_topn(val_loader, net, criterion, optim, epoch, args):
 
     html_fn = os.path.join(args.result_dir, 'best_images',
                            'topn_failures.html')
-    from utils.results_page import ResultsPage
+    from .results_page import ResultsPage
     ip = ResultsPage('topn failures', html_fn)
     for classid in class_to_images:
         class_name = cfg.DATASET_INST.trainid_to_name[classid]

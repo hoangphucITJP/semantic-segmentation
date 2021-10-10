@@ -42,8 +42,8 @@ import torchvision.utils as vutils
 from tabulate import tabulate
 from PIL import Image
 
-from config import cfg
-from utils.results_page import ResultsPage
+from ..config import cfg
+from .results_page import ResultsPage
 from runx.logx import logx
 
 

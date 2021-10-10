@@ -33,8 +33,8 @@ POSSIBILITY OF SUCH DAMAGE.
 import torch
 from torch import nn
 
-from network.mynn import initialize_weights, Norm2d, Upsample
-from network.utils import get_aspp, get_trunk, make_seg_head
+from .mynn import initialize_weights, Norm2d, Upsample
+from .utils import get_aspp, get_trunk, make_seg_head
 
 
 class DeepV3Plus(nn.Module):
@@ -43,10 +43,10 @@ class DeepV3Plus(nn.Module):
     Always stride8
     """
     def __init__(self, num_classes, trunk='wrn38', criterion=None,
-                 use_dpc=False, init_all=False):
+                 use_dpc=False, init_all=False, pretrained=None):
         super(DeepV3Plus, self).__init__()
         self.criterion = criterion
-        self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk)
+        self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk, pretrained=pretrained)
         self.aspp, aspp_out_ch = get_aspp(high_level_ch,
                                           bottleneck_ch=256,
                                           output_stride=8,

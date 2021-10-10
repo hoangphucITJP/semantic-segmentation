@@ -33,13 +33,14 @@ Dataset setup and loaders
 import importlib
 import torchvision.transforms as standard_transforms
 
-import transforms.joint_transforms as joint_transforms
-import transforms.transforms as extended_transforms
+from ..transforms import joint_transforms as joint_transforms
+from ..transforms import transforms as extended_transforms
 from torch.utils.data import DataLoader
 
-from config import cfg, update_dataset_cfg, update_dataset_inst
+from ..config import cfg, update_dataset_cfg, update_dataset_inst
 from runx.logx import logx
-from datasets.randaugment import RandAugment
+from .randaugment import RandAugment
+from ... import dataset
 
 
 def setup_loaders(args):
@@ -52,8 +53,7 @@ def setup_loaders(args):
     # TODO add error checking to make sure class exists
     logx.msg(f'dataset = {args.dataset}')
 
-    mod = importlib.import_module('datasets.{}'.format(args.dataset))
-    dataset_cls = getattr(mod, 'Loader')
+    dataset_cls = getattr(dataset, 'Loader')
 
     logx.msg(f'ignore_label = {dataset_cls.ignore_label}')
 
@@ -150,6 +150,7 @@ def setup_loaders(args):
     # Create loaders
     ######################################################################
     val_set = dataset_cls(
+        data_dir='data/20211008',
         mode=val_name,
         joint_transform_list=val_joint_transform_list,
         img_transform=val_input_transform,
@@ -159,7 +160,7 @@ def setup_loaders(args):
     update_dataset_inst(dataset_inst=val_set)
 
     if args.apex:
-        from datasets.sampler import DistributedSampler
+        from .sampler import DistributedSampler
         val_sampler = DistributedSampler(val_set, pad=False, permutation=False,
                                          consecutive_sample=False)
     else:
@@ -182,7 +183,7 @@ def setup_loaders(args):
             label_transform=target_train_transform)
 
         if args.apex:
-            from datasets.sampler import DistributedSampler
+            from .sampler import DistributedSampler
             train_sampler = DistributedSampler(train_set, pad=True,
                                                permutation=True,
                                                consecutive_sample=False)

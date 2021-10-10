@@ -38,8 +38,8 @@ from collections import OrderedDict
 from functools import partial
 import torch.nn as nn
 import torch
-import network.mynn as mynn
-from config import cfg
+from . import mynn
+from ..config import cfg
 
 
 def bnrelu(channels):
@@ -400,13 +400,12 @@ class wrn38(nn.Module):
     """
     This is wider resnet 38, output_stride=8
     """
-    def __init__(self, pretrained=True):
+    def __init__(self, pretrained=None):
         super(wrn38, self).__init__()
         wide_resnet = wider_resnet38_a2(classes=1000, dilation=True)
         wide_resnet = torch.nn.DataParallel(wide_resnet)
         if pretrained:
-            pretrained_model = cfg.MODEL.WRN38_CHECKPOINT
-            checkpoint = torch.load(pretrained_model, map_location='cpu')
+            checkpoint = torch.load(pretrained, map_location='cpu')
             wide_resnet.load_state_dict(checkpoint['state_dict'])
             del checkpoint
         wide_resnet = wide_resnet.module

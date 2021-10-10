@@ -33,8 +33,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from runx.logx import logx
-from config import cfg
-from loss.rmi import RMILoss
+from ..config import cfg
+from .rmi import RMILoss
 
 
 def get_loss(args):

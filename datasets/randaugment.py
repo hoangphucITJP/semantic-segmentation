@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from PIL import Image, ImageOps, ImageEnhance, ImageDraw
-from config import cfg
+from ..config import cfg
 
 
 fillmask = cfg.DATASET.IGNORE_LABEL

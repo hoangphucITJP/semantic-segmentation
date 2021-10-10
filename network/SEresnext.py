@@ -32,12 +32,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import logging
 from collections import OrderedDict
 import math
 import torch.nn as nn
 from torch.utils import model_zoo
-import network.mynn as mynn
+from . import mynn
 
 __all__ = ['SENet', 'se_resnext50_32x4d', 'se_resnext101_32x4d']
 

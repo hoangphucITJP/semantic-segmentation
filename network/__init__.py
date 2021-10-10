@@ -6,20 +6,19 @@ import importlib
 import torch
 
 from runx.logx import logx
-from config import cfg
+from ..config import cfg
 
 
-def get_net(args, criterion):
+def get_net(args, criterion, pretrained=None):
     """
     Get Network Architecture based on arguments provided
     """
-    net = get_model(network='network.' + args.arch,
+    net = get_model(network='module.semantic_segmentation.network.' + args.arch,
                     num_classes=cfg.DATASET.NUM_CLASSES,
-                    criterion=criterion)
+                    criterion=criterion, pretrained=pretrained)
     num_params = sum([param.nelement() for param in net.parameters()])
     logx.msg('Model params = {:2.1f}M'.format(num_params / 1000000))
 
-    net = net.cuda()
     return net
 
 
@@ -42,7 +41,7 @@ def wrap_network_in_dataparallel(net, use_apex_data_parallel=False):
     return net
 
 
-def get_model(network, num_classes, criterion):
+def get_model(network, num_classes, criterion, pretrained=None):
     """
     Fetch Network Function Pointer
     """
@@ -50,5 +49,5 @@ def get_model(network, num_classes, criterion):
     model = network[network.rfind('.') + 1:]
     mod = importlib.import_module(module)
     net_func = getattr(mod, model)
-    net = net_func(num_classes=num_classes, criterion=criterion)
+    net = net_func(num_classes=num_classes, criterion=criterion, pretrained=pretrained)
     return net
