@@ -6,9 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..config import cfg
+from ..utils.misc import partially_load_state_dict
 from .mynn import Norm2d
-from runx.logx import logx
 
 
 def fixed_padding(inputs, kernel_size, dilation):
@@ -111,7 +110,7 @@ class xception71(nn.Module):
     Modified Alighed Xception
     """
     def __init__(self, output_stride, BatchNorm,
-                 pretrained=True):
+                 pretrained=True, input_channels=3):
         super(xception71, self).__init__()
 
         self.output_stride = output_stride
@@ -127,7 +126,7 @@ class xception71(nn.Module):
             raise NotImplementedError
 
         # Entry flow
-        self.conv1 = nn.Conv2d(3, 32, 3, stride=2, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(input_channels, 32, 3, stride=2, padding=1, bias=False)
         self.bn1 = BatchNorm(32)
         self.relu = nn.ReLU(inplace=True)
 
@@ -264,15 +263,13 @@ class xception71(nn.Module):
                 m.bias.data.zero_()
 
     def _load_pretrained_model(self):
-        pretrained_model = cfg.MODEL.X71_CHECKPOINT
-        ckpt = torch.load(pretrained_model, map_location='cpu')
+        ckpt = torch.load('pretraineds/aligned_xception71.pth', map_location='cpu')
         model_dict = {k.replace('module.', ''): v for k, v in
                       ckpt['model_dict'].items()}
         state_dict = self.state_dict()
         state_dict.update(model_dict)
-        self.load_state_dict(state_dict, strict=False)
+        partially_load_state_dict(self, state_dict)
         del ckpt
-        logx.msg('Loaded {} weights'.format(pretrained_model))
 
 
 if __name__ == "__main__":

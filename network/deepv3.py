@@ -42,11 +42,12 @@ class DeepV3Plus(nn.Module):
     DeepLabV3+ with various trunks supported
     Always stride8
     """
-    def __init__(self, num_classes, trunk='wrn38', criterion=None,
-                 use_dpc=False, init_all=False, pretrained=None):
+
+    def __init__(self, num_classes=1, trunk='wrn38', criterion=None,
+                 use_dpc=False, init_all=False, input_channels=3):
         super(DeepV3Plus, self).__init__()
         self.criterion = criterion
-        self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk, pretrained=pretrained)
+        self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk, input_channels=input_channels)
         self.aspp, aspp_out_ch = get_aspp(high_level_ch,
                                           bottleneck_ch=256,
                                           output_stride=8,
@@ -83,7 +84,8 @@ class DeepV3Plus(nn.Module):
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
         final = self.final(cat_s4)
-        out = Upsample(final, x_size[2:])
+        up_sampled = Upsample(final, x_size[2:])
+        out = torch.amax(up_sampled, (1, 2, 3))
 
         if self.training:
             assert 'gts' in inputs
@@ -127,6 +129,7 @@ class DeepV3(nn.Module):
     """
     DeepLabV3 with various trunks supported
     """
+
     def __init__(self, num_classes, trunk='resnet-50', criterion=None,
                  use_dpc=False, init_all=False, output_stride=8):
         super(DeepV3, self).__init__()
@@ -163,4 +166,3 @@ class DeepV3(nn.Module):
 
 def DeepV3R50(num_classes, criterion):
     return DeepV3(num_classes, trunk='resnet-50', criterion=criterion)
-

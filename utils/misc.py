@@ -38,9 +38,11 @@ import numpy as np
 
 import torchvision.transforms as standard_transforms
 import torchvision.utils as vutils
+from loguru import logger
 
 from tabulate import tabulate
 from PIL import Image
+from torch.nn import Parameter
 
 from ..config import cfg
 from .results_page import ResultsPage
@@ -80,7 +82,7 @@ def calculate_iou(hist_data):
     acc_cls = np.diag(hist_data) / hist_data.sum(axis=1)
     acc_cls = np.nanmean(acc_cls)
     divisor = hist_data.sum(axis=1) + hist_data.sum(axis=0) - \
-        np.diag(hist_data)
+              np.diag(hist_data)
     iu = np.diag(hist_data) / divisor
     return iu, acc, acc_cls
 
@@ -209,9 +211,10 @@ class ImageDumper():
     converts them to images (doing transformations where necessary) and then
     writes the images out to disk.
     """
+
     def __init__(self, val_len, tensorboard=True, write_webpage=True,
                  webpage_fn='index.html', dump_all_images=False, dump_assets=False,
-                 dump_err_prob=False, dump_num=10, dump_for_auto_labelling=False, 
+                 dump_err_prob=False, dump_num=10, dump_for_auto_labelling=False,
                  dump_for_submission=False):
         """
         :val_len: num validation images
@@ -238,7 +241,7 @@ class ImageDumper():
             self.dump_frequency = self.viz_frequency
 
         inv_mean = [-mean / std for mean, std in zip(cfg.DATASET.MEAN,
-                                                   cfg.DATASET.STD)]
+                                                     cfg.DATASET.STD)]
         inv_std = [1 / std for std in cfg.DATASET.STD]
         self.inv_normalize = standard_transforms.Normalize(
             mean=inv_mean, std=inv_std
@@ -290,7 +293,7 @@ class ImageDumper():
             'attn_*': different scales of attn
             'err_mask': err_mask
         """
-        if self.dump_for_auto_labelling or  self.dump_for_submission:
+        if self.dump_for_auto_labelling or self.dump_for_submission:
             pass
         elif (val_idx % self.dump_frequency or cfg.GLOBAL_RANK != 0):
             return
@@ -306,19 +309,19 @@ class ImageDumper():
         prediction = dump_dict['assets']['predictions'][idx]
         del dump_dict['assets']['predictions']
         img_name = dump_dict['img_names'][idx]
-        
+
         if self.dump_for_auto_labelling:
             # Dump Prob
             prob_fn = '{}_prob.png'.format(img_name)
             prob_fn = os.path.join(self.save_dir, prob_fn)
-            cv2.imwrite(prob_fn, (prob_image.cpu().numpy()*255).astype(np.uint8))
-            
+            cv2.imwrite(prob_fn, (prob_image.cpu().numpy() * 255).astype(np.uint8))
+
         if self.dump_for_auto_labelling or self.dump_for_submission:
             # Dump Predictions
             prediction_cpu = np.array(prediction)
             label_out = np.zeros_like(prediction)
             submit_fn = '{}.png'.format(img_name)
-            for label_id, train_id in   cfg.DATASET_INST.id_to_trainid.items():
+            for label_id, train_id in cfg.DATASET_INST.id_to_trainid.items():
                 label_out[np.where(prediction_cpu == train_id)] = label_id
             cv2.imwrite(os.path.join(self.save_dir, submit_fn), label_out)
             return
@@ -511,3 +514,17 @@ def fmt_scale(prefix, scale):
     scale_str = str(float(scale))
     scale_str.replace('.', '')
     return f'{prefix}_{scale_str}x'
+
+
+def partially_load_state_dict(model, state_dict):
+    own_state = model.state_dict()
+    for name, param in state_dict.items():
+        if name not in own_state:
+            continue
+        if isinstance(param, Parameter):
+            # backwards compatibility for serialized parameters
+            param = param.data
+        try:
+            own_state[name].copy_(param)
+        except RuntimeError:
+            logger.warning(f'Missmatching shape of {name} between {own_state[name].shape} and {param.shape}')

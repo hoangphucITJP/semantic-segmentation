@@ -98,7 +98,7 @@ class get_resnet(nn.Module):
         return s2_features, s4_features, x
 
 
-def get_trunk(trunk_name, output_stride=8, pretrained=None):
+def get_trunk(trunk_name, output_stride=8, input_channels=3):
     """
     Retrieve the network trunk and channel counts.
     """
@@ -108,28 +108,28 @@ def get_trunk(trunk_name, output_stride=8, pretrained=None):
         #
         # FIXME: pass in output_stride once we support stride 16
         #
-        backbone = wrn38(pretrained=pretrained)
+        backbone = wrn38(input_channels=input_channels)
         s2_ch = 128
         s4_ch = 256
         high_level_ch = 4096
     elif trunk_name == 'xception71':
         backbone = xception71(output_stride=output_stride, BatchNorm=Norm2d,
-                              pretrained=True)
+                              pretrained=True, input_channels=input_channels)
         s2_ch = 64
         s4_ch = 128
         high_level_ch = 2048
     elif trunk_name == 'seresnext-50' or trunk_name == 'seresnext-101':
-        backbone = get_resnet(trunk_name, output_stride=output_stride)
+        backbone = get_resnet(trunk_name, output_stride=output_stride, input_channels=input_channels)
         s2_ch = 48
         s4_ch = -1
         high_level_ch = 2048
     elif trunk_name == 'resnet-50' or trunk_name == 'resnet-101':
-        backbone = get_resnet(trunk_name, output_stride=output_stride)
+        backbone = get_resnet(trunk_name, output_stride=output_stride, input_channels=input_channels)
         s2_ch = 256
         s4_ch = -1
         high_level_ch = 2048
     elif trunk_name == 'hrnetv2':
-        backbone = hrnetv2.get_seg_model()
+        backbone = hrnetv2.get_seg_model(input_channels=input_channels)
         high_level_ch = backbone.high_level_ch
         s2_ch = -1
         s4_ch = -1

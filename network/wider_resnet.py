@@ -38,8 +38,9 @@ from collections import OrderedDict
 from functools import partial
 import torch.nn as nn
 import torch
+
 from . import mynn
-from ..config import cfg
+from ..utils.misc import partially_load_state_dict
 
 
 def bnrelu(channels):
@@ -68,6 +69,7 @@ class IdentityResidualBlock(nn.Module):
     """
     Identity Residual Block for WideResnet
     """
+
     def __init__(self,
                  in_channels,
                  channels,
@@ -110,7 +112,6 @@ class IdentityResidualBlock(nn.Module):
 
         # Check if we are using distributed BN and use the nn from encoding.nn
         # library rather than using standard pytorch.nn
-
 
         # Check parameters for inconsistencies
         if len(channels) != 2 and len(channels) != 3:
@@ -185,12 +186,11 @@ class IdentityResidualBlock(nn.Module):
         return out
 
 
-
-
 class WiderResNet(nn.Module):
     """
     WideResnet Global Module for Initialization
     """
+
     def __init__(self,
                  structure,
                  norm_act=bnrelu,
@@ -288,13 +288,13 @@ class WiderResNetA2(nn.Module):
         If `True` apply dilation to the last three modules and change the
         down-sampling factor from 32 to 8.
     """
+
     def __init__(self,
                  structure,
-                 norm_act=bnrelu,
                  classes=0,
                  dilation=False,
-                 dist_bn=False
-                 ):
+                 dist_bn=False,
+                 input_channels=3):
         super(WiderResNetA2, self).__init__()
         self.dist_bn = dist_bn
 
@@ -309,7 +309,7 @@ class WiderResNetA2(nn.Module):
 
         # Initial layers
         self.mod1 = torch.nn.Sequential(OrderedDict([
-            ("conv1", nn.Conv2d(3, 64, 3, stride=1, padding=1, bias=False))
+            ("conv1", nn.Conv2d(input_channels, 64, 3, stride=1, padding=1, bias=False))
         ]))
 
         # Groups of residual blocks
@@ -366,9 +366,9 @@ class WiderResNetA2(nn.Module):
 
     def forward(self, img):
         out = self.mod1(img)
-        out = self.mod2(self.pool2(out))   # s2
-        out = self.mod3(self.pool3(out))   # s4
-        out = self.mod4(out)               # s8
+        out = self.mod2(self.pool2(out))  # s2
+        out = self.mod3(self.pool3(out))  # s4
+        out = self.mod4(out)  # s8
         out = self.mod5(out)
         out = self.mod6(out)
         out = self.mod7(out)
@@ -400,14 +400,14 @@ class wrn38(nn.Module):
     """
     This is wider resnet 38, output_stride=8
     """
-    def __init__(self, pretrained=None):
+
+    def __init__(self, input_channels=3):
         super(wrn38, self).__init__()
-        wide_resnet = wider_resnet38_a2(classes=1000, dilation=True)
+        wide_resnet = wider_resnet38_a2(input_channels=input_channels, classes=1000, dilation=True)
         wide_resnet = torch.nn.DataParallel(wide_resnet)
-        if pretrained:
-            checkpoint = torch.load(pretrained, map_location='cpu')
-            wide_resnet.load_state_dict(checkpoint['state_dict'])
-            del checkpoint
+        checkpoint = torch.load('pretraineds/wider_resnet38.pth.tar', map_location='cpu')
+        partially_load_state_dict(wide_resnet, checkpoint['state_dict'])
+        del checkpoint
         wide_resnet = wide_resnet.module
         # print(wide_resnet)
         self.mod1 = wide_resnet.mod1
@@ -423,9 +423,9 @@ class wrn38(nn.Module):
 
     def forward(self, x):
         x = self.mod1(x)
-        x = self.mod2(self.pool2(x))   # s2
+        x = self.mod2(self.pool2(x))  # s2
         s2_features = x
-        x = self.mod3(self.pool3(x))   # s4
+        x = self.mod3(self.pool3(x))  # s4
         s4_features = x
         x = self.mod4(x)
         x = self.mod5(x)

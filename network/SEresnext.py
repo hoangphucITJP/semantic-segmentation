@@ -70,6 +70,7 @@ class SEModule(nn.Module):
     """
     Sequeeze Excitation Module
     """
+
     def __init__(self, channels, reduction):
         super(SEModule, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -94,6 +95,7 @@ class Bottleneck(nn.Module):
     """
     Base class for bottlenecks that implements `forward()` method.
     """
+
     def forward(self, x):
         residual = x
 
@@ -378,7 +380,6 @@ def initialize_pretrained_model(model, num_classes, settings):
     model.std = settings['std']
 
 
-
 def se_resnext50_32x4d(num_classes=1000):
     """
     Defination For SE Resnext50
@@ -404,5 +405,3 @@ def se_resnext101_32x4d(num_classes=1000):
     settings = pretrained_settings['se_resnext101_32x4d']['imagenet']
     initialize_pretrained_model(model, num_classes, settings)
     return model
-
-
