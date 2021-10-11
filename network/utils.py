@@ -76,38 +76,14 @@ class get_resnet(nn.Module):
             raise ValueError("Not a valid network arch")
 
         self.layer0 = resnet.layer0
-        self.layer1, self.layer2, self.layer3, self.layer4 = \
-            resnet.layer1, resnet.layer2, resnet.layer3, resnet.layer4
-
-        if output_stride == 8:
-            for n, m in self.layer3.named_modules():
-                if 'conv2' in n:
-                    m.dilation, m.padding, m.stride = (2, 2), (2, 2), (1, 1)
-                elif 'downsample.0' in n:
-                    m.stride = (1, 1)
-            for n, m in self.layer4.named_modules():
-                if 'conv2' in n:
-                    m.dilation, m.padding, m.stride = (4, 4), (4, 4), (1, 1)
-                elif 'downsample.0' in n:
-                    m.stride = (1, 1)
-        elif output_stride == 16:
-            for n, m in self.layer4.named_modules():
-                if 'conv2' in n:
-                    m.dilation, m.padding, m.stride = (2, 2), (2, 2), (1, 1)
-                elif 'downsample.0' in n:
-                    m.stride = (1, 1)
-        else:
-            raise 'unsupported output_stride {}'.format(output_stride)
+        self.layer1, self.layer2 = resnet.layer1, resnet.layer2
 
     def forward(self, x):
         x = self.layer0(x)
         x = self.layer1(x)
         s2_features = x
         x = self.layer2(x)
-        s4_features = x
-        x = self.layer3(x)
-        x = self.layer4(x)
-        return s2_features, s4_features, x
+        return s2_features, x
 
 
 def get_trunk(trunk_name, output_stride=8, input_channels=3):
@@ -142,9 +118,9 @@ def get_trunk(trunk_name, output_stride=8, input_channels=3):
         high_level_ch = 2048
     elif trunk_name == 'shallow-resnet-50':
         backbone = get_resnet(trunk_name, output_stride=output_stride, input_channels=input_channels)
-        s2_ch = 128
+        s2_ch = 32
         s4_ch = -1
-        high_level_ch = 1024
+        high_level_ch = 64
     elif trunk_name == 'hrnetv2':
         backbone = hrnetv2.get_seg_model(input_channels=input_channels)
         high_level_ch = backbone.high_level_ch
@@ -152,7 +128,7 @@ def get_trunk(trunk_name, output_stride=8, input_channels=3):
         s4_ch = -1
     elif trunk_name == 'customxception71':
         backbone = custom_xception71(output_stride=output_stride, BatchNorm=Norm2d,
-                              pretrained=True, input_channels=input_channels)
+                                     pretrained=True, input_channels=input_channels)
         s2_ch = 64
         s4_ch = 128
         high_level_ch = 2048
@@ -287,6 +263,7 @@ class DPC(nn.Module):
     From: Searching for Efficient Multi-scale architectures for dense
     prediction
     '''
+
     def __init__(self, in_dim, reduction_dim=256, output_stride=16,
                  rates=[(1, 6), (18, 15), (6, 21), (1, 1), (6, 3)],
                  dropout=False, separable=False):

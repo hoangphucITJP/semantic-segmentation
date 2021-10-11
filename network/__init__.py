@@ -8,12 +8,12 @@ import torch
 from runx.logx import logx
 
 
-def get_net(args, criterion, input_channels=3, backbone='wrn38'):
+def get_net(args, input_channels=3, backbone='wrn38'):
     """
     Get Network Architecture based on arguments provided
     """
     net = get_model(network='module.semantic_segmentation.network.' + args.arch,
-                    criterion=criterion, input_channels=input_channels, backbone=backbone)
+                    input_channels=input_channels, backbone=backbone)
     num_params = sum([param.nelement() for param in net.parameters()])
     logx.msg('Model params = {:2.1f}M'.format(num_params / 1000000))
 
@@ -39,7 +39,7 @@ def wrap_network_in_dataparallel(net, use_apex_data_parallel=False):
     return net
 
 
-def get_model(network, criterion, input_channels=3, backbone='wrn38'):
+def get_model(network, input_channels=3, backbone='wrn38'):
     """
     Fetch Network Function Pointer
     """
@@ -47,5 +47,5 @@ def get_model(network, criterion, input_channels=3, backbone='wrn38'):
     model = network[network.rfind('.') + 1:]
     mod = importlib.import_module(module)
     net_func = getattr(mod, model)
-    net = net_func(criterion=criterion, input_channels=input_channels, trunk=backbone)
+    net = net_func(input_channels=input_channels, trunk=backbone)
     return net

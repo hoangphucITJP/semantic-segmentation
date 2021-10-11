@@ -96,7 +96,7 @@ class Bottleneck(nn.Module):
     """
     Bottleneck Layer for Resnet
     """
-    expansion = 4
+    expansion = 2
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
@@ -202,19 +202,17 @@ class ShallowResNet(nn.Module):
     """
 
     def __init__(self, block, layers, num_classes=1000, input_channels=3):
-        self.inplanes = 32
+        self.inplanes = 16
         super(ShallowResNet, self).__init__()
-        self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1 = mynn.Norm2d(32)
+        self.bn1 = mynn.Norm2d(16)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 32, layers[0])
-        self.layer2 = self._make_layer(block, 64, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 128, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 256, layers[3], stride=2)
+        self.layer1 = self._make_layer(block, 16, layers[0])
+        self.layer2 = self._make_layer(block, 32, layers[1], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(256 * block.expansion, num_classes)
+        self.fc = nn.Linear(128 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -248,8 +246,6 @@ class ShallowResNet(nn.Module):
 
         x = self.layer1(x)
         x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)

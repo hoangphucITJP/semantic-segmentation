@@ -30,6 +30,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
+import numpy as np
 import torch
 from torch import nn
 
@@ -43,40 +44,38 @@ class DeepV3Plus(nn.Module):
     Always stride8
     """
 
-    def __init__(self, num_classes=1, trunk='wrn38', criterion=None,
+    def __init__(self, num_classes=1, trunk='wrn38',
                  use_dpc=False, init_all=False, input_channels=3):
         super(DeepV3Plus, self).__init__()
-        self.criterion = criterion
         self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk, input_channels=input_channels)
         self.aspp, aspp_out_ch = get_aspp(high_level_ch,
-                                          bottleneck_ch=256,
+                                          bottleneck_ch=64,
                                           output_stride=8,
                                           dpc=use_dpc)
-        self.bot_fine = nn.Conv2d(s2_ch, 48, kernel_size=1, bias=False)
-        self.bot_aspp = nn.Conv2d(aspp_out_ch, 256, kernel_size=1, bias=False)
+        self.bot_fine = nn.Conv2d(s2_ch, 32, kernel_size=1, bias=False)
+        self.bot_aspp = nn.Conv2d(aspp_out_ch, 128, kernel_size=1, bias=False)
         self.final = nn.Sequential(
-            nn.Conv2d(256 + 48, 256, kernel_size=3, padding=1, bias=False),
-            Norm2d(256),
+            nn.Conv2d(128 + 32, 128, kernel_size=3, padding=1, bias=False),
+            Norm2d(128),
             nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1, bias=False),
-            Norm2d(256),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            Norm2d(128),
             nn.ReLU(inplace=True),
-            nn.Conv2d(256, num_classes, kernel_size=1, bias=False))
+            nn.Conv2d(128, num_classes, kernel_size=1, bias=True))
 
         if init_all:
             initialize_weights(self.aspp)
             initialize_weights(self.bot_aspp)
             initialize_weights(self.bot_fine)
-            initialize_weights(self.final)
-        else:
-            initialize_weights(self.final)
+
+        initialize_weights(self.final)
 
     def forward(self, inputs):
         assert 'images' in inputs
         x = inputs['images']
 
         x_size = x.size()
-        s2_features, _, final_features = self.backbone(x)
+        s2_features, final_features = self.backbone(x)
         aspp = self.aspp(final_features)
         conv_aspp = self.bot_aspp(aspp)
         conv_s2 = self.bot_fine(s2_features)
@@ -87,12 +86,13 @@ class DeepV3Plus(nn.Module):
         up_sampled = Upsample(final, x_size[2:])
         out = torch.amax(up_sampled, (1, 2, 3))
 
-        if self.training:
-            assert 'gts' in inputs
-            gts = inputs['gts']
-            return self.criterion(out, gts)
+        im = x[0].squeeze().numpy().mean(0)
+        im = ((im - im.min()) / (im.max() - im.min()) * 255).astype(np.uint8)
 
-        return {'pred': out}
+        mask = torch.sigmoid(up_sampled[0, 0]).detach().numpy()
+        mask = (mask * 255).astype(np.uint8)
+
+        return {'pred': out, 'in': im, 'mask': mask}
 
 
 def DeepV3PlusSRNX50(num_classes, criterion):
