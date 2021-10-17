@@ -74,7 +74,6 @@ class DeepV3Plus(nn.Module):
         assert 'images' in inputs
         x = inputs['images']
 
-        x_size = x.size()
         s2_features, final_features = self.backbone(x)
         aspp = self.aspp(final_features)
         conv_aspp = self.bot_aspp(aspp)
@@ -83,16 +82,12 @@ class DeepV3Plus(nn.Module):
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
         final = self.final(cat_s4)
-        up_sampled = Upsample(final, x_size[2:])
-        out = torch.amax(up_sampled, (1, 2, 3))
 
         im = x[0].squeeze().numpy().mean(0)
         im = ((im - im.min()) / (im.max() - im.min()) * 255).astype(np.uint8)
 
-        mask = torch.sigmoid(up_sampled[0, 0]).detach().numpy()
-        mask = (mask * 255).astype(np.uint8)
-
-        return {'pred': out, 'in': im, 'mask': mask}
+        mask = torch.sigmoid(final)
+        return {'1st_im': im, 'mask': mask}
 
 
 def DeepV3PlusSRNX50(num_classes, criterion):
