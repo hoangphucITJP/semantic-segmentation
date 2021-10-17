@@ -83,11 +83,8 @@ class DeepV3Plus(nn.Module):
         cat_s4 = torch.cat(cat_s4, 1)
         final = self.final(cat_s4)
 
-        im = x[0].squeeze().numpy().mean(0)
-        im = ((im - im.min()) / (im.max() - im.min()) * 255).astype(np.uint8)
-
         mask = torch.sigmoid(final)
-        return {'1st_im': im, 'mask': mask}
+        return {'mask': mask}
 
 
 def DeepV3PlusSRNX50(num_classes, criterion):
