@@ -40,7 +40,6 @@ from .SEresnext import se_resnext50_32x4d, se_resnext101_32x4d
 from .Resnet import resnet50, resnet101, resnet18, resnet34
 from . import hrnetv2
 
-from runx.logx import logx
 from ..config import cfg
 
 
@@ -135,7 +134,7 @@ def get_trunk(trunk_name, output_stride=8, input_channels=3):
     else:
         raise 'unknown backbone {}'.format(trunk_name)
 
-    logx.msg("Trunk: {}".format(trunk_name))
+    print("Trunk: {}".format(trunk_name))
     return backbone, s2_ch, s4_ch, high_level_ch
 
 

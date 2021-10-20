@@ -15,7 +15,7 @@ def get_net(arch, input_channels=3, backbone='wrn38'):
     net = get_model(network='module.semantic_segmentation.network.' + arch,
                     input_channels=input_channels, backbone=backbone)
     num_params = sum([param.nelement() for param in net.parameters()])
-    logx.msg('Model params = {:2.1f}M'.format(num_params / 1000000))
+    print('Model params = {:2.1f}M'.format(num_params / 1000000))
 
     return net
 
