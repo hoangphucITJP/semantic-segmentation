@@ -202,15 +202,15 @@ class ShallowResNet(nn.Module):
     """
 
     def __init__(self, block, layers, num_classes=1000, input_channels=3):
-        self.inplanes = 16
+        self.inplanes = 32
         super(ShallowResNet, self).__init__()
-        self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1 = mynn.Norm2d(16)
+        self.bn1 = mynn.Norm2d(32)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 16, layers[0])
-        self.layer2 = self._make_layer(block, 32, layers[1], stride=2)
+        self.layer2 = self._make_layer(block, 8, layers[1], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(128 * block.expansion, num_classes)
 

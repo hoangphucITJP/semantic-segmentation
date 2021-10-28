@@ -49,19 +49,16 @@ class DeepV3Plus(nn.Module):
         super(DeepV3Plus, self).__init__()
         self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk, input_channels=input_channels)
         self.aspp, aspp_out_ch = get_aspp(high_level_ch,
-                                          bottleneck_ch=64,
+                                          bottleneck_ch=8,
                                           output_stride=8,
                                           dpc=use_dpc)
-        self.bot_fine = nn.Conv2d(s2_ch, 32, kernel_size=1, bias=False)
-        self.bot_aspp = nn.Conv2d(aspp_out_ch, 128, kernel_size=1, bias=False)
+        self.bot_fine = nn.Conv2d(s2_ch, 8, kernel_size=1, bias=False)
+        self.bot_aspp = nn.Conv2d(aspp_out_ch, 8, kernel_size=1, bias=False)
         self.final = nn.Sequential(
-            nn.Conv2d(128 + 32, 128, kernel_size=3, padding=1, bias=False),
-            Norm2d(128),
+            nn.Conv2d(8 + 8, 32, kernel_size=3, padding=1, bias=False),
+            Norm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
-            Norm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, num_classes, kernel_size=1, bias=True))
+            nn.Conv2d(32, num_classes, kernel_size=1, bias=True))
 
         if init_all:
             initialize_weights(self.aspp)

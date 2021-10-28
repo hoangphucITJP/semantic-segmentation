@@ -119,7 +119,7 @@ def get_trunk(trunk_name, output_stride=8, input_channels=3):
         backbone = get_resnet(trunk_name, output_stride=output_stride, input_channels=input_channels)
         s2_ch = 32
         s4_ch = -1
-        high_level_ch = 64
+        high_level_ch = 16
     elif trunk_name == 'hrnetv2':
         backbone = hrnetv2.get_seg_model(input_channels=input_channels)
         high_level_ch = backbone.high_level_ch
