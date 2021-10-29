@@ -67,6 +67,11 @@ class DeepV3Plus(nn.Module):
 
         initialize_weights(self.final)
 
+        with torch.no_grad():
+            self.final.weight = torch.nn.parameter.Parameter(
+                (self.final[-1].weight - self.final[-1].weight.min()) / 2 + self.final[-1].weight.min()
+            )
+
     def forward(self, inputs):
         assert 'images' in inputs
         x = inputs['images']
