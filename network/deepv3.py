@@ -88,7 +88,7 @@ class DeepV3Plus(nn.Module):
         final = self.final(cat_s4)
         up_sampled = Upsample(final, x_size[2:])
 
-        mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,))
+        mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,)).to(up_sampled.device)
         cropped_mask = (x.mean(1, keepdims=True) > 0) * mask
         return {'mask': cropped_mask}
 
