@@ -64,7 +64,7 @@ class get_resnet(nn.Module):
             resnet.layer0 = nn.Sequential(resnet.conv1, resnet.bn1,
                                           resnet.relu, resnet.maxpool)
         elif trunk_name == 'shallow-resnet-50':
-            resnet = resnet50(input_channels=input_channels, shallow=True)
+            resnet = resnet50(input_channels=input_channels, shallow=True, pretrained=False)
             resnet.layer0 = nn.Sequential(resnet.conv1, resnet.bn1,
                                           resnet.relu, resnet.maxpool)
         elif trunk_name == 'resnet-101':

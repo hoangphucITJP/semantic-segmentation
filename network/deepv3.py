@@ -67,15 +67,17 @@ class DeepV3Plus(nn.Module):
 
         initialize_weights(self.final)
 
-        with torch.no_grad():
-            self.final.weight = torch.nn.parameter.Parameter(
-                (self.final[-1].weight - self.final[-1].weight.min()) / 2 + self.final[-1].weight.min()
-            )
+        if False:
+            with torch.no_grad():
+                self.final[-1].weight = torch.nn.parameter.Parameter(
+                    torch.clip(self.final[-1].weight, max=0)
+                )
 
-    def forward(self, inputs):
+    def forward(self, inputs, noise_std=0):
         assert 'images' in inputs
         x = inputs['images']
 
+        x_size = x.size()
         s2_features, final_features = self.backbone(x)
         aspp = self.aspp(final_features)
         conv_aspp = self.bot_aspp(aspp)
@@ -84,9 +86,11 @@ class DeepV3Plus(nn.Module):
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
         final = self.final(cat_s4)
+        up_sampled = Upsample(final, x_size[2:])
 
-        mask = torch.sigmoid(final)
-        return {'mask': mask}
+        mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,))
+        cropped_mask = (x.mean(1, keepdims=True) > 0) * mask
+        return {'mask': cropped_mask}
 
 
 def DeepV3PlusSRNX50(num_classes, criterion):
