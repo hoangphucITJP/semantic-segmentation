@@ -90,7 +90,9 @@ class DeepV3Plus(nn.Module):
 
         mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,)).to(up_sampled.device)
         cropped_mask = (x.mean(1, keepdims=True) > 0) * mask
-        return {'mask': cropped_mask}
+        flatten_mask = cropped_mask.flatten(start_dim=1)
+        prediction = torch.mean(torch.topk(flatten_mask, round(0.05 * flatten_mask.shape[1]), dim=-1)[0], dim=-1)
+        return {'mask': cropped_mask, 'prediction': prediction}
 
 
 def DeepV3PlusSRNX50(num_classes, criterion):
