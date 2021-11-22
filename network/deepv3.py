@@ -89,6 +89,7 @@ class DeepV3Plus(nn.Module):
         up_sampled = Upsample(final, x_size[2:])
 
         mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,)).to(up_sampled.device)
+        mask = mask.clip(0, 1)
         cropped_mask = (x.mean(1, keepdims=True) > 0) * mask
         prediction = cropped_mask.amax((1, 2, 3))
         return {'mask': cropped_mask, 'prediction': prediction}
