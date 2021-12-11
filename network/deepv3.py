@@ -30,9 +30,10 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
-import numpy as np
 import torch
 from torch import nn
+from torch.nn import Sequential
+from torchvision.ops.misc import ConvNormActivation
 
 from .mynn import initialize_weights, Norm2d, Upsample
 from .utils import get_aspp, get_trunk, make_seg_head
@@ -73,6 +74,19 @@ class DeepV3Plus(nn.Module):
                     torch.clip(self.final[-1].weight, max=0)
                 )
 
+        self.global_context_conv = DeepV3Plus.build_global_context_net()
+        self.global_context_fc = nn.Linear(64, 16)
+
+    @staticmethod
+    def build_global_context_net():
+        layers = [
+            ConvNormActivation(16, 32, stride=2),
+            nn.MaxPool2d(3, stride=2),
+            ConvNormActivation(32, 64, stride=2),
+            nn.AdaptiveAvgPool2d(1),
+        ]
+        return Sequential(*layers)
+
     def forward(self, inputs, noise_std=0):
         assert 'images' in inputs
         x = inputs['images']
@@ -85,7 +99,9 @@ class DeepV3Plus(nn.Module):
         conv_aspp = Upsample(conv_aspp, s2_features.size()[2:])
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
-        final = self.final(cat_s4)
+        global_context = self.global_context_fc(torch.squeeze(self.global_context_conv(final_features)))
+        global_context = torch.unsqueeze(torch.unsqueeze(global_context, 2), 3)
+        final = self.final(cat_s4 + global_context)
         up_sampled = Upsample(final, x_size[2:])
 
         mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,)).to(up_sampled.device)
