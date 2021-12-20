@@ -99,7 +99,7 @@ class DeepV3Plus(nn.Module):
         conv_aspp = Upsample(conv_aspp, s2_features.size()[2:])
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
-        global_context = self.global_context_fc(torch.squeeze(self.global_context_conv(final_features)))
+        global_context = self.global_context_fc(torch.squeeze(torch.squeeze(self.global_context_conv(final_features), 2), 2))
         global_context = torch.unsqueeze(torch.unsqueeze(global_context, 2), 3)
         final = self.final(cat_s4 + global_context)
         up_sampled = Upsample(final, x_size[2:])
