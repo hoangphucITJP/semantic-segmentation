@@ -48,7 +48,7 @@ class DeepV3Plus(nn.Module):
     def __init__(self, num_classes=1, trunk='wrn38',
                  use_dpc=False, init_all=False, input_channels=3):
         super(DeepV3Plus, self).__init__()
-        self.backbone, s2_ch, _s4_ch, high_level_ch = get_trunk(trunk, input_channels=input_channels)
+        self.backbone, s2_ch, _, high_level_ch = get_trunk(trunk, input_channels=input_channels)
         self.aspp, aspp_out_ch = get_aspp(high_level_ch,
                                           bottleneck_ch=8,
                                           output_stride=8,
@@ -75,7 +75,7 @@ class DeepV3Plus(nn.Module):
                 )
 
         self.global_context_conv = DeepV3Plus.build_global_context_net()
-        self.global_context_fc = nn.Linear(64, 16)
+        self.global_context_fc = nn.Linear(288, 16)
 
     @staticmethod
     def build_global_context_net():
@@ -99,7 +99,9 @@ class DeepV3Plus(nn.Module):
         conv_aspp = Upsample(conv_aspp, s2_features.size()[2:])
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
-        global_context = self.global_context_fc(torch.squeeze(torch.squeeze(self.global_context_conv(final_features), 2), 2))
+        global_context_input = torch.squeeze(torch.squeeze(self.global_context_conv(final_features), 2), 2)
+        global_context_input = torch.cat((global_context_input, inputs['black_white']), axis=1)
+        global_context = self.global_context_fc(global_context_input)
         global_context = torch.unsqueeze(torch.unsqueeze(global_context, 2), 3)
         final = self.final(cat_s4 + global_context)
         up_sampled = Upsample(final, x_size[2:])
