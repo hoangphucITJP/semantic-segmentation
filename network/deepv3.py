@@ -56,7 +56,7 @@ class DeepV3Plus(nn.Module):
         self.bot_fine = nn.Conv2d(s2_ch, 8, kernel_size=1, bias=False)
         self.bot_aspp = nn.Conv2d(aspp_out_ch, 8, kernel_size=1, bias=False)
         self.final = nn.Sequential(
-            nn.Conv2d(8 + 8, 32, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(32, 32, kernel_size=3, padding=1, bias=False),
             Norm2d(32),
             nn.ReLU(inplace=True),
             nn.Conv2d(32, num_classes, kernel_size=1, bias=True))
@@ -74,18 +74,8 @@ class DeepV3Plus(nn.Module):
                     torch.clip(self.final[-1].weight, max=0)
                 )
 
-        self.global_context_conv = DeepV3Plus.build_global_context_net()
-        self.global_context_fc = nn.Linear(288, 16)
-
-    @staticmethod
-    def build_global_context_net():
-        layers = [
-            ConvNormActivation(16, 32, stride=2),
-            nn.MaxPool2d(3, stride=2),
-            ConvNormActivation(32, 64, stride=2),
-            nn.AdaptiveAvgPool2d(1),
-        ]
-        return Sequential(*layers)
+        self.neck_head = nn.Linear(75 * 175, 2)
+        self.black_white_fc = nn.Linear(224, 16)
 
     def forward(self, inputs, noise_std=0):
         assert 'images' in inputs
@@ -99,18 +89,19 @@ class DeepV3Plus(nn.Module):
         conv_aspp = Upsample(conv_aspp, s2_features.size()[2:])
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
-        global_context_input = torch.squeeze(torch.squeeze(self.global_context_conv(final_features), 2), 2)
-        global_context_input = torch.cat((global_context_input, inputs['black_white']), axis=1)
-        global_context = self.global_context_fc(global_context_input)
-        global_context = torch.unsqueeze(torch.unsqueeze(global_context, 2), 3)
-        final = self.final(cat_s4 + global_context)
+        black_white = inputs['black_white']
+        black_white_out = self.black_white_fc(black_white)
+        expanded_black_white = black_white_out.unsqueeze(-1).unsqueeze(-1).tile((1, 1, 75, 175))
+        cat_black_white = torch.cat((cat_s4, expanded_black_white), dim=1)
+        final = self.final(cat_black_white)
+        neck = torch.sigmoid(self.neck_head(final.flatten(1)))
         up_sampled = Upsample(final, x_size[2:])
 
         mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,)).to(up_sampled.device)
         mask = mask.clip(0, 1)
         cropped_mask = (x.mean(1, keepdims=True) > 0) * mask
         prediction = cropped_mask.amax((1, 2, 3))
-        return {'mask': cropped_mask, 'prediction': prediction}
+        return {'mask': cropped_mask, 'prediction': prediction, 'neck': neck}
 
 
 def DeepV3PlusSRNX50(num_classes, criterion):
