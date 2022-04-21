@@ -72,8 +72,8 @@ class DeepV3Plus(nn.Module):
                     torch.clip(self.final[-1].weight, max=0)
                 )
 
-        self.black_white_w_fc = nn.Linear(10, 16)
-        self.black_white_b_fc = nn.Linear(10, 16)
+        self.black_white_w_fc = nn.Linear(input_channels, 16)
+        self.black_white_b_fc = nn.Linear(input_channels, 16)
 
     def forward(self, inputs, noise_std=0):
         assert 'images' in inputs

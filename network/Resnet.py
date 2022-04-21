@@ -170,8 +170,7 @@ class ResNet(nn.Module):
                 mynn.Norm2d(planes * block.expansion),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers = [block(self.inplanes, planes, stride, downsample)]
         self.inplanes = planes * block.expansion
         for index in range(1, blocks):
             layers.append(block(self.inplanes, planes))
@@ -230,8 +229,7 @@ class ShallowResNet(nn.Module):
                 mynn.Norm2d(planes * block.expansion),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers = [block(self.inplanes, planes, stride, downsample)]
         self.inplanes = planes * block.expansion
         for index in range(1, blocks):
             layers.append(block(self.inplanes, planes))
