@@ -46,7 +46,11 @@ class DeepV3Plus(nn.Module):
     def __init__(self, num_classes=1, trunk='wrn38',
                  use_dpc=False, init_all=False, input_channels=3):
         super(DeepV3Plus, self).__init__()
-        self.backbone, s2_ch, _, high_level_ch = get_trunk(trunk, input_channels=input_channels)
+        if type(trunk) is str:
+            self.backbone, s2_ch, _, high_level_ch = get_trunk(trunk, input_channels=input_channels)
+        else:
+            self.backbone, s2_ch, high_level_ch = trunk
+
         self.aspp, aspp_out_ch = get_aspp(high_level_ch,
                                           bottleneck_ch=8,
                                           output_stride=8,
