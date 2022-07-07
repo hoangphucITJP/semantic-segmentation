@@ -76,10 +76,8 @@ class DeepV3Plus(nn.Module):
                     torch.clip(self.final[-1].weight, max=0)
                 )
 
-        self.black_white_w_fc = nn.Linear(input_channels * 2, 16)
-        self.black_white_b_fc = nn.Linear(input_channels * 2, 16)
 
-    def forward(self, inputs, noise_std=0):
+    def forward(self, inputs):
         assert 'images' in inputs
         x = inputs['images']
 
@@ -91,14 +89,10 @@ class DeepV3Plus(nn.Module):
         conv_aspp = Upsample(conv_aspp, s2_features.size()[2:])
         cat_s4 = [conv_s2, conv_aspp]
         cat_s4 = torch.cat(cat_s4, 1)
-        black_white = inputs['black_white']
-        black_white_w = self.black_white_w_fc(black_white).unsqueeze(-1).unsqueeze(-1)
-        black_white_b = self.black_white_b_fc(black_white).unsqueeze(-1).unsqueeze(-1)
-        black_white_o = cat_s4 * black_white_w + black_white_b
-        final = self.final(black_white_o)
+        final = self.final(cat_s4)
         up_sampled = Upsample(final, x_size[2:])
 
-        mask = torch.sigmoid(up_sampled) + torch.normal(mean=0, std=noise_std, size=(1,)).to(up_sampled.device)
+        mask = torch.sigmoid(up_sampled)
         mask = mask.clip(0, 1)
         cropped_mask = (x.mean(1, keepdims=True) > 0) * mask
         prediction = cropped_mask.amax((1, 2, 3))
