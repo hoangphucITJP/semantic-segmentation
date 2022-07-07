@@ -47,15 +47,26 @@ class DeepV3Plus(nn.Module):
                  use_dpc=False, init_all=False, input_channels=3):
         super(DeepV3Plus, self).__init__()
         if type(trunk) is str:
-            self.backbone, _, _, _ = get_trunk(trunk, input_channels=input_channels)
+            self.backbone, s2_ch, _, high_level_ch = get_trunk(trunk, input_channels=input_channels)
         else:
-            self.backbone, _, _ = trunk
+            self.backbone, s2_ch, high_level_ch = trunk
 
+        self.aspp, aspp_out_ch = get_aspp(high_level_ch,
+                                          bottleneck_ch=8,
+                                          output_stride=8,
+                                          dpc=use_dpc)
+        self.bot_fine = nn.Conv2d(s2_ch, 8, kernel_size=1, bias=False)
+        self.bot_aspp = nn.Conv2d(aspp_out_ch, 8, kernel_size=1, bias=False)
         self.final = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=1, bias=False),
-            Norm2d(64),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1, bias=False),
+            Norm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, num_classes, kernel_size=1, bias=True))
+            nn.Conv2d(32, num_classes, kernel_size=1, bias=True))
+
+        if init_all:
+            initialize_weights(self.aspp)
+            initialize_weights(self.bot_aspp)
+            initialize_weights(self.bot_fine)
 
         initialize_weights(self.final)
 
@@ -65,19 +76,25 @@ class DeepV3Plus(nn.Module):
                     torch.clip(self.final[-1].weight, max=0)
                 )
 
-        self.black_white_w_fc = nn.Linear(input_channels * 2, 32)
-        self.black_white_b_fc = nn.Linear(input_channels * 2, 32)
+        self.black_white_w_fc = nn.Linear(input_channels * 2, 16)
+        self.black_white_b_fc = nn.Linear(input_channels * 2, 16)
 
     def forward(self, inputs, noise_std=0):
         assert 'images' in inputs
         x = inputs['images']
 
         x_size = x.size()
-        _, final_features = self.backbone(x)
+        s2_features, final_features = self.backbone(x)
+        aspp = self.aspp(final_features)
+        conv_aspp = self.bot_aspp(aspp)
+        conv_s2 = self.bot_fine(s2_features)
+        conv_aspp = Upsample(conv_aspp, s2_features.size()[2:])
+        cat_s4 = [conv_s2, conv_aspp]
+        cat_s4 = torch.cat(cat_s4, 1)
         black_white = inputs['black_white']
         black_white_w = self.black_white_w_fc(black_white).unsqueeze(-1).unsqueeze(-1)
         black_white_b = self.black_white_b_fc(black_white).unsqueeze(-1).unsqueeze(-1)
-        black_white_o = final_features * black_white_w + black_white_b
+        black_white_o = cat_s4 * black_white_w + black_white_b
         final = self.final(black_white_o)
         up_sampled = Upsample(final, x_size[2:])
 
